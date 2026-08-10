@@ -18,10 +18,29 @@ biome and server-side scoring).
 | Key | Does |
 | --- | --- |
 | **space** | Hold it. That's bhopping. |
+| **scroll down** | Jump — the `bind mwheeldown +jump` setup |
 | **V** | Release your banked hop chain as a shockwave |
 | **B** | Toggle CS2 movement |
 | **N** | Toggle autobhop |
 | *(unbound)* | Toggle the speedometer |
+
+### Scroll to jump
+
+Minecraft cannot bind the wheel to a key — `KeyMapping` takes keyboard keys and mouse buttons, and
+the wheel is neither — so scroll is intercepted and turned into a short jump **pulse**: one notch
+asks to jump for the next 3 ticks, and touching the ground during that window fires immediately.
+
+That pulse is the whole reason the CS bind works. A notch is instantaneous with no held state, so it
+has to cover a few ticks for one of them to land on the tick you touch down — which is the
+frame-perfect timing you would otherwise be hitting by hand. Scroll jumping therefore ignores the
+press/release rule manual jumping obeys: during a pulse, landing means jumping.
+
+It pairs with `autoBunnyHopping: false`. With autobhop on, holding space already does this and the
+wheel is redundant.
+
+Scrolling down no longer cycles the hotbar (scroll up still does). Menus, chat, the inventory and
+the spectator fly-speed wheel are untouched. Configure with `scrollJump`, `scrollJumpDirection`
+(`"down"`, `"up"`, `"both"`), `scrollJumpPulseTicks` and `scrollJumpBlocksHotbar`.
 
 Hold space, and on each jump hold *only* the strafe key in the direction you are turning while
 turning the mouse that way — `A` turning left, `D` turning right. Do not hold `W`.

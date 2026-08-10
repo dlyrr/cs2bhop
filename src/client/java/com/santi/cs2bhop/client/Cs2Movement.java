@@ -78,6 +78,7 @@ public final class Cs2Movement {
 
         boolean onGround = player.onGround();
         boolean jumpHeld = player.input.keyPresses.jump();
+        boolean scrollPulse = ScrollJump.jumping();
         boolean ducking = player.isCrouching();
 
         if (onGround) {
@@ -90,8 +91,9 @@ public final class Cs2Movement {
         }
 
         // Autobhop re-fires while held; otherwise you have to release and press again, and hitting
-        // the landing tick by hand is the whole skill.
-        boolean wantJump = jumpHeld && (config.autoBunnyHopping || !state.jumpHeldLastTick);
+        // the landing tick by hand is the whole skill. A scroll pulse bypasses the press/release
+        // rule for its short window — see ScrollJump.
+        boolean wantJump = scrollPulse || (jumpHeld && (config.autoBunnyHopping || !state.jumpHeldLastTick));
 
         SourcePhysics.wishDirection(input.z, input.x, player.getYRot(), state.wishDir);
         double wishX = state.wishDir[0];
@@ -126,6 +128,7 @@ public final class Cs2Movement {
                     velocity.y = jumpImpulse * state.jumpMultiplier(config);
                     state.hopStreak = state.groundTicks <= 1 ? state.hopStreak + 1 : 1;
                     state.onJump(config, velocity.horizontalSpeed());
+                    ScrollJump.consume();
                     airborne = true;
                 } else {
                     velocity.accelerate(wishX, wishZ, wishSpeed, config.sv_accelerate, dt);

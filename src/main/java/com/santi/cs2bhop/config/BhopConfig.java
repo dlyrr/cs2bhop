@@ -63,6 +63,22 @@ public final class BhopConfig {
      */
     public boolean frictionOnHopTick = false;
 
+    /** Scroll wheel acts as jump, the CS {@code bind mwheeldown +jump} setup. */
+    public boolean scrollJump = true;
+
+    /** Which wheel direction jumps: {@code "down"}, {@code "up"} or {@code "both"}. */
+    public String scrollJumpDirection = "down";
+
+    /**
+     * How many ticks one wheel notch keeps asking to jump. This is what makes the bind work — a
+     * notch is instantaneous, so it has to cover a few ticks for one of them to land on the tick you
+     * touch the ground.
+     */
+    public int scrollJumpPulseTicks = 3;
+
+    /** Stop a jumping scroll from also cycling the hotbar. */
+    public boolean scrollJumpBlocksHotbar = true;
+
     /** Speed-scaled FOV widening and edge vignette. */
     public boolean motionBlur = true;
 

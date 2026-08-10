@@ -65,7 +65,10 @@ public class Cs2BhopClient implements ClientModInitializer {
                 lastPlayer = client.player;
                 STATE.reset();
                 ClientProgress.reset();
+                ScrollJump.reset();
             }
+
+            ScrollJump.tick();
 
             while (toggleKey.consumeClick()) {
                 config.enabled = !config.enabled;

@@ -5,7 +5,8 @@
 	"client": [
 		"PlayerTravelMixin",
 		"LivingEntityJumpMixin",
-		"FieldOfViewMixin"
+		"FieldOfViewMixin",
+		"MouseHandlerMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1
