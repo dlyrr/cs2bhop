@@ -102,11 +102,19 @@ Level 50 is roughly 18,000 hops, about 3.8 hours of clean bhopping.
 
 **Regular jumps do not count.** A jump scores only if *both* hold:
 
-- it is **chained** — you spent at most 3 ticks flat on the ground before taking off. Standing or
+- it is **chained** — you spent at most 4 ticks flat on the ground before taking off. Standing or
   running racks up far more than that, so an ordinary jump never qualifies. This is the condition
   that actually separates hops from jumps.
 - you were at **75% of your level's run speed** or better, so jumping on the spot is worth nothing
   no matter how fast you spam it.
+
+**A missed hop costs you the hop, not the chain.** Scoring a hop and ending a chain are separate
+questions with separate windows: `hopChainWindow` (4 ticks) decides whether a takeoff scores, and
+`chainGraceTicks` (12) decides whether the chain is over. Sharing one number meant a single scuffed
+landing — which flat ground produces constantly, since there is no slope to carry you off — wiped a
+chain you had spent a minute building. Replaying a flat-ground run with a botched landing every
+fourth hop: chain now peaks at **9**, previously it reset to 0 every fourth hop. Standing still still
+ends it.
 
 Hops are detected **server-side** from movement, not reported by the client, so points cannot be
 spoofed by sending packets.
@@ -136,18 +144,20 @@ Points per hop scale with speed, your boots, and whether you are in the bhop bio
 ## Boots
 
 Six pairs. Damage is per **banked hop** — build a chain, then press **V** to release it as a radial
-shockwave. Radius grows with the chain from 3 up to 12 blocks.
+shockwave. Better boots hit harder *and* wider: each tier has its own base radius, growth per hop,
+and cap.
 
-| Boots | Damage/hop | Points | Recipe |
-| --- | --- | --- | --- |
-| Wooden | 1 | 1.10x | Leather boots + rabbit's foot |
-| Copper | 2 | 1.25x | Copper boots + rabbit's foot |
-| Iron | 5 | 1.50x | Iron boots + rabbit's foot |
-| Diamond | 6 | 1.75x | Diamond boots + rabbit's foot |
-| Netherite | 8 | 2.00x | Netherite boots + rabbit's foot |
-| **Phoon** | 10 | 3.00x | — |
+| Boots | Damage/hop | Points | Radius (base → cap) | Recipe |
+| --- | --- | --- | --- | --- |
+| Wooden | 1 | 1.10x | 4 → 10 | Leather boots + rabbit's foot |
+| Copper | 2 | 1.25x | 5 → 12 | Copper boots + rabbit's foot |
+| Iron | 5 | 1.50x | 6 → 16 | Iron boots + rabbit's foot |
+| Diamond | 6 | 1.75x | 7 → 18 | Diamond boots + rabbit's foot |
+| Netherite | 8 | 2.00x | 8 → 22 | Netherite boots + rabbit's foot |
+| **Phoon** | 10 | 3.00x | 10 → 28 | — |
 
-A 30-hop chain in iron boots is 150 damage in an 10.5-block radius.
+A 30-hop chain in iron boots is 150 damage across a 16-block radius. The same chain in Phoon Boots
+is 300 damage across 28 blocks.
 
 The **Phoon Boots** have no recipe and are not in the creative menu. Chain 50 hops in a row and they
 find you. They play the song.

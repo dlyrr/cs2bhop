@@ -146,10 +146,20 @@ public final class BhopConfig {
     /**
      * How many ticks you may spend flat on the ground before a jump stops counting as a chained hop.
      *
-     * <p>3 ticks is 0.15s. Standing or running along the ground racks up far more than that, so a
+     * <p>4 ticks is 0.2s. Standing or running along the ground racks up far more than that, so a
      * normal jump never qualifies — this is the condition that actually separates hops from jumps.
      */
-    public int hopChainWindow = 3;
+    public int hopChainWindow = 4;
+
+    /**
+     * How many ticks flat on the ground end a chain outright.
+     *
+     * <p>Separate from {@link #hopChainWindow} on purpose. Using one number for both meant a single
+     * scuffed landing — the kind flat ground produces constantly, since there is no slope to carry
+     * you off — did not merely fail to score, it wiped a chain you had spent a minute building. Now
+     * a missed hop costs you that hop, and only actually stopping costs you the chain.
+     */
+    public int chainGraceTicks = 12;
 
     /**
      * Fraction of your level's run speed you must be moving at for a jump to count.

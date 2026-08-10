@@ -14,23 +14,38 @@ import net.minecraft.world.item.equipment.ArmorMaterials;
  * custom armour-layer textures; only the inventory icon is ours.
  */
 public enum BootTier {
-    WOOD("wooden_bhop_boots", 1.0F, 1.10, ArmorMaterials.LEATHER, false),
-    COPPER("copper_bhop_boots", 2.0F, 1.25, ArmorMaterials.COPPER, false),
-    IRON("iron_bhop_boots", 5.0F, 1.50, ArmorMaterials.IRON, false),
-    DIAMOND("diamond_bhop_boots", 6.0F, 1.75, ArmorMaterials.DIAMOND, false),
-    NETHERITE("netherite_bhop_boots", 8.0F, 2.00, ArmorMaterials.NETHERITE, false),
-    PHOON("phoon_boots", 10.0F, 3.00, ArmorMaterials.NETHERITE, true);
+    //                                  dmg   points  base  /hop   cap
+    WOOD("wooden_bhop_boots", 1.0F, 1.10, 4.0, 0.30, 10.0, ArmorMaterials.LEATHER, false),
+    COPPER("copper_bhop_boots", 2.0F, 1.25, 5.0, 0.35, 12.0, ArmorMaterials.COPPER, false),
+    IRON("iron_bhop_boots", 5.0F, 1.50, 6.0, 0.40, 16.0, ArmorMaterials.IRON, false),
+    DIAMOND("diamond_bhop_boots", 6.0F, 1.75, 7.0, 0.45, 18.0, ArmorMaterials.DIAMOND, false),
+    NETHERITE("netherite_bhop_boots", 8.0F, 2.00, 8.0, 0.50, 22.0, ArmorMaterials.NETHERITE, false),
+    PHOON("phoon_boots", 10.0F, 3.00, 10.0, 0.60, 28.0, ArmorMaterials.NETHERITE, true);
 
     private final String id;
     private final float damagePerHop;
     private final double pointMultiplier;
+    private final double baseRadius;
+    private final double radiusPerHop;
+    private final double maxRadius;
     private final ArmorMaterial material;
     private final boolean secret;
 
-    BootTier(String id, float damagePerHop, double pointMultiplier, ArmorMaterial material, boolean secret) {
+    BootTier(
+            String id,
+            float damagePerHop,
+            double pointMultiplier,
+            double baseRadius,
+            double radiusPerHop,
+            double maxRadius,
+            ArmorMaterial material,
+            boolean secret) {
         this.id = id;
         this.damagePerHop = damagePerHop;
         this.pointMultiplier = pointMultiplier;
+        this.baseRadius = baseRadius;
+        this.radiusPerHop = radiusPerHop;
+        this.maxRadius = maxRadius;
         this.material = material;
         this.secret = secret;
     }
@@ -61,11 +76,20 @@ public enum BootTier {
         return damagePerHop * hops;
     }
 
+    public double baseRadius() {
+        return baseRadius;
+    }
+
+    public double maxRadius() {
+        return maxRadius;
+    }
+
     /**
-     * Shockwave radius in blocks. Grows with the chain so a long run is worth holding, but flattens
-     * out so it never covers the whole chunk.
+     * Shockwave radius in blocks. Every tier gets its own footprint — better boots hit harder
+     * <i>and</i> wider — growing with the chain so a long run is worth holding, then capping so it
+     * never quietly turns into a chunk-wide mob wipe.
      */
     public double shockwaveRadius(int hops) {
-        return Math.min(12.0, 3.0 + hops * 0.25);
+        return Math.min(maxRadius, baseRadius + hops * radiusPerHop);
     }
 }

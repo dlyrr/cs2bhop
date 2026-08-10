@@ -156,25 +156,22 @@ public final class BhopTracker {
 
         double peakSpeed = state.detector.peakSpeed();
 
+        // A rejected takeoff costs you that hop but not the chain — only actually stopping does
+        // that, below. Punishing a scuffed landing with the whole chain made flat ground unplayable.
         switch (verdict) {
             case COUNTED -> {
                 state.streak++;
                 award(player, state, progress, peakSpeed, config, saveData);
                 state.lastVerdict = "counted (%.0f u/s, chain %d)".formatted(peakSpeed, state.streak);
             }
-            case REJECTED_NOT_CHAINED -> {
-                state.streak = 0;
-                state.lastVerdict = "rejected: ordinary jump, sat flat too long";
-            }
-            case REJECTED_TOO_SLOW -> {
-                state.streak = 0;
-                state.lastVerdict = "rejected: too slow, %.0f < %.0f u/s".formatted(peakSpeed, required);
-            }
+            case REJECTED_NOT_CHAINED -> state.lastVerdict = "no score: ordinary jump, sat flat too long";
+            case REJECTED_TOO_SLOW ->
+                state.lastVerdict = "no score: too slow, %.0f < %.0f u/s".formatted(peakSpeed, required);
             case NONE -> {}
         }
 
-        // Standing around ends the chain.
-        if (state.detector.chainBroken(config.hopChainWindow) && state.streak > 0) {
+        // Actually stopping ends the chain.
+        if (state.detector.chainBroken(config.chainGraceTicks) && state.streak > 0) {
             state.streak = 0;
         }
 
