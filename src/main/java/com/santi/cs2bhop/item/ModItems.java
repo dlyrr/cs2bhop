@@ -18,6 +18,8 @@ public final class ModItems {
 
     private static final Map<BootTier, BhopBootsItem> BOOTS = new EnumMap<>(BootTier.class);
 
+    public static PhoonEggItem PHOON_EGG;
+
     private ModItems() {}
 
     public static BhopBootsItem of(BootTier tier) {
@@ -41,6 +43,13 @@ public final class ModItems {
             BhopBootsItem item = Registry.register(BuiltInRegistries.ITEM, key, new BhopBootsItem(tier, properties));
             BOOTS.put(tier, item);
         }
+
+        ResourceKey<Item> eggKey =
+                ResourceKey.create(Registries.ITEM, Identifier.fromNamespaceAndPath("cs2bhop", "phoon_egg"));
+        PHOON_EGG = Registry.register(
+                BuiltInRegistries.ITEM,
+                eggKey,
+                new PhoonEggItem(new Item.Properties().stacksTo(1).rarity(Rarity.EPIC).setId(eggKey)));
 
         // The Phoon Boots are deliberately absent here — they are earned, not browsed.
         CreativeModeTabEvents.modifyOutputEvent(CreativeModeTabs.COMBAT).register(output -> {

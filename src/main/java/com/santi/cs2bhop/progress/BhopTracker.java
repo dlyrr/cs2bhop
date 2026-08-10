@@ -220,6 +220,12 @@ public final class BhopTracker {
 
         saveData.put(player.getUUID(), player.getGameProfile().name(), updated);
 
+        // The same hop also scores in the boss race, if one is running.
+        com.santi.cs2bhop.boss.PhoonBossFight fight = com.santi.cs2bhop.boss.PhoonBossFight.current();
+        if (fight != null && fight.isFighter(player.getUUID())) {
+            fight.addPlayerPoints(earned);
+        }
+
         int levelAfter = updated.level();
         if (levelAfter > levelBefore) {
             announceLevelUp(player, levelAfter, config);

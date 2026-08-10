@@ -55,16 +55,22 @@ public class Cs2BhopClient implements ClientModInitializer {
         // Blur first so the speedometer sits on top of the vignette rather than under it.
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath(MOD_ID, "motion_blur"), new MotionBlur());
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath(MOD_ID, "speedometer"), new SpeedometerHud());
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath(MOD_ID, "boss_scoreboard"), new BossHud());
 
         ClientPlayNetworking.registerGlobalReceiver(
                 BhopPayloads.ProgressSync.TYPE,
                 (payload, context) -> context.client().execute(() -> ClientProgress.accept(payload)));
+
+        ClientPlayNetworking.registerGlobalReceiver(
+                BhopPayloads.BossSync.TYPE,
+                (payload, context) -> context.client().execute(() -> ClientBossState.accept(payload)));
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             if (client.player != lastPlayer) {
                 lastPlayer = client.player;
                 STATE.reset();
                 ClientProgress.reset();
+                ClientBossState.reset();
                 ScrollJump.reset();
             }
 

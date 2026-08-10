@@ -193,6 +193,86 @@ public final class BhopConfig {
     /** Speed in u/s at which a bhopping mob stops gaining. */
     public double mobBhopMaxSpeed = 500.0;
 
+    // ------------------------------------------------------------- boss fight
+
+    /** Length of the fight in seconds. */
+    public int bossFightSeconds = 300;
+
+    /** Points the boss accrues per second at level 1. Tuned so a clean bhop run is a dead heat. */
+    public double bossPointsPerSecond = 3.5;
+
+    /**
+     * How much the boss's rate scales with your level.
+     *
+     * <p>Without this the fight inverts: a level 50 player carries a far higher speed ceiling, so
+     * every hop is worth more and the boss gets lapped. Scaling its rate by your level keeps it a
+     * race at both ends instead of a wall early and a formality later.
+     */
+    public double bossLevelScaling = 0.85;
+
+    /** Points you lose when the boss lands a hit. */
+    public double bossHitPlayerPenalty = 10.0;
+
+    /** Points the boss loses when you land a hit. */
+    public double playerHitBossPenalty = 20.0;
+
+    /**
+     * Points the boss loses per hit while it is tired.
+     *
+     * <p>Five times a normal hit, which is what makes the window worth breaking your chain for —
+     * you give up hop points to close the distance, and it has to pay off.
+     */
+    public double bossTiredHitPenalty = 100.0;
+
+    /** How long the boss stays tired, in ticks. Four seconds. */
+    public int bossTiredDurationTicks = 80;
+
+    /** Shortest and longest gap between tired windows, in seconds. */
+    public int bossTiredMinIntervalSeconds = 22;
+
+    public int bossTiredMaxIntervalSeconds = 40;
+
+    /** Damage per boss hit, in health points. 5 is two and a half hearts. */
+    public double bossAttackDamage = 5.0;
+
+    public double bossHealth = 200.0;
+
+    /** Radius the arena is flattened to. */
+    public int bossArenaRadius = 40;
+
+    /**
+     * Radius the barriers close to by the end.
+     *
+     * <p>Kept generous on purpose: a bhopper at 600 u/s crosses 40 blocks in under three seconds,
+     * so squeezing this much below 20 stops being a fight and starts being a corridor.
+     */
+    public int bossArenaMinRadius = 22;
+
+    /** How far above the floor the arena is cleared. */
+    public int bossArenaClearHeight = 8;
+
+    /** Height of the barrier wall. */
+    public int bossBarrierHeight = 10;
+
+    /** Columns processed per tick while building or restoring, to avoid a freeze. */
+    public int bossArenaBlocksPerTick = 400;
+
+    /** Put the terrain back when the fight ends. Off means you keep the crater. */
+    public boolean restoreArena = true;
+
+    /** Ticks between boss dashes toward you. */
+    public int bossDashInterval = 12;
+
+    public double bossDashStrength = 0.85;
+
+    /** Boss speed ceiling in u/s. */
+    public double bossMaxSpeed = 700.0;
+
+    public float bossSongVolume = 6.0F;
+
+    /** Length of phoon.ogg in ticks, so it can be looped seamlessly (3:50). */
+    public int phoonSongLengthTicks = 4600;
+
     // ------------------------------------------------------------------- stamina
 
     public double sv_staminamax = 80.0;

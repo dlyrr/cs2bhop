@@ -51,6 +51,33 @@ public final class BhopPayloads {
         }
     }
 
+    /** Live boss-fight scoreboard. Sent only while a fight is running. */
+    public record BossSync(boolean active, long bossPoints, long playerPoints, int ticksLeft, boolean tired)
+            implements CustomPacketPayload {
+
+        public static final Type<BossSync> TYPE = new Type<>(Identifier.fromNamespaceAndPath("cs2bhop", "boss_sync"));
+
+        public static final StreamCodec<RegistryFriendlyByteBuf, BossSync> CODEC =
+                CustomPacketPayload.codec(BossSync::write, BossSync::new);
+
+        private BossSync(RegistryFriendlyByteBuf buf) {
+            this(buf.readBoolean(), buf.readLong(), buf.readLong(), buf.readVarInt(), buf.readBoolean());
+        }
+
+        private void write(FriendlyByteBuf buf) {
+            buf.writeBoolean(active);
+            buf.writeLong(bossPoints);
+            buf.writeLong(playerPoints);
+            buf.writeVarInt(Math.max(0, ticksLeft));
+            buf.writeBoolean(tired);
+        }
+
+        @Override
+        public Type<? extends CustomPacketPayload> type() {
+            return TYPE;
+        }
+    }
+
     /** Client pressed the boot ability key. Everything about the result is decided server-side. */
     public record ReleaseShockwave() implements CustomPacketPayload {
 
@@ -66,3 +93,4 @@ public final class BhopPayloads {
         }
     }
 }
+
