@@ -1,0 +1,29 @@
+{
+	"has_precipitation": true,
+	"temperature": 0.8,
+	"downfall": 0.4,
+	"effects": {
+		"water_color": "#3F76E4"
+	},
+	"spawners": {},
+	"spawn_costs": {},
+	"carvers": [],
+	"features": [
+		[],
+		[],
+		[],
+		[],
+		[],
+		[],
+		[],
+		[],
+		[],
+		[
+			"cs2bhop:sparse_oak",
+			"minecraft:patch_grass_plain"
+		],
+		[
+			"minecraft:freeze_top_layer"
+		]
+	]
+}

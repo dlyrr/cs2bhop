@@ -1,0 +1,19 @@
+{
+	"phoon": {
+		"category": "player",
+		"subtitle": "subtitles.cs2bhop.phoon",
+		"sounds": [
+			{
+				"name": "cs2bhop:phoon",
+				"stream": true
+			}
+		]
+	},
+	"shockwave": {
+		"category": "player",
+		"subtitle": "subtitles.cs2bhop.shockwave",
+		"sounds": [
+			"cs2bhop:shockwave"
+		]
+	}
+}

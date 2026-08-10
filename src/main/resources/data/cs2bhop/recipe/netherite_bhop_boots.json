@@ -1,0 +1,11 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "equipment",
+  "ingredients": [
+    "minecraft:netherite_boots",
+    "minecraft:rabbit_foot"
+  ],
+  "result": {
+    "id": "cs2bhop:netherite_bhop_boots"
+  }
+}

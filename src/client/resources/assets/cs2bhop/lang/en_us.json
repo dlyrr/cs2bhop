@@ -1,5 +1,18 @@
 {
 	"key.cs2bhop.toggle": "Toggle CS2 movement",
 	"key.cs2bhop.autobhop": "Toggle autobhop",
-	"key.cs2bhop.hud": "Toggle speedometer"
+	"key.cs2bhop.hud": "Toggle speedometer",
+	"key.cs2bhop.ability": "Release bhop shockwave",
+
+	"item.cs2bhop.wooden_bhop_boots": "Wooden Bhop Boots",
+	"item.cs2bhop.copper_bhop_boots": "Copper Bhop Boots",
+	"item.cs2bhop.iron_bhop_boots": "Iron Bhop Boots",
+	"item.cs2bhop.diamond_bhop_boots": "Diamond Bhop Boots",
+	"item.cs2bhop.netherite_bhop_boots": "Netherite Bhop Boots",
+	"item.cs2bhop.phoon_boots": "Phoon Boots",
+
+	"biome.cs2bhop.bhop_flats": "Bhop Flats",
+
+	"subtitles.cs2bhop.phoon": "Phoon Boots go off",
+	"subtitles.cs2bhop.shockwave": "Bhop shockwave"
 }

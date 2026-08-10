@@ -3,20 +3,24 @@
 	"id": "cs2bhop",
 	"version": "${version}",
 	"name": "CS2 Bhop",
-	"description": "Replaces Minecraft's player movement with Counter-Strike 2's. Source-engine air acceleration including the 30 u/s air wish speed clamp that makes airstrafing work, autobhop, CS2 stamina, and a cl_showpos speedometer. Client-side only.",
+	"description": "Counter-Strike 2 movement for Minecraft. Source-engine air acceleration and autobhop, a 50-level progression that widens your speed envelope, six bhop boots that convert banked hops into a radial shockwave, a flat bhop biome worth 1.5x points, a leaderboard, and mobs that occasionally know how to bhop.",
 	"authors": [
 		"santi"
 	],
 	"contact": {},
 	"license": "CC0-1.0",
 	"icon": "assets/cs2bhop/icon.png",
-	"environment": "client",
+	"environment": "*",
 	"entrypoints": {
+		"main": [
+			"com.santi.cs2bhop.Cs2Bhop"
+		],
 		"client": [
 			"com.santi.cs2bhop.client.Cs2BhopClient"
 		]
 	},
 	"mixins": [
+		"cs2bhop.mixins.json",
 		{
 			"config": "cs2bhop.client.mixins.json",
 			"environment": "client"

@@ -1,40 +1,56 @@
 # CS2 Bhop
 
-Replaces Minecraft's player movement with Counter-Strike 2's, so you can bunny hop.
+Counter-Strike 2 movement for Minecraft, plus a progression built on top of it.
 
-Fabric, Minecraft **26.1.2**, client-side only. No server install needed.
+Fabric, Minecraft **26.1.2**. Needs to be installed on **both client and server** (it adds items, a
+biome and server-side scoring).
 
 `build/libs/cs2bhop-1.0.0.jar`
 
 ## Install
 
-1. Create a **Fabric 26.1.2** instance (the one you were setting up in Modrinth App).
+1. Create a **Fabric 26.1.2** instance.
 2. Put **Fabric API 0.155.2+26.1.2** in its `mods` folder.
-3. Put `cs2bhop-1.0.0.jar` next to it.
+3. Put `cs2bhop-1.0.0.jar` next to it. Same on the server for multiplayer.
 
 ## Controls
 
 | Key | Does |
 | --- | --- |
+| **space** | Hold it. That's bhopping. |
+| **V** | Release your banked hop chain as a shockwave |
 | **B** | Toggle CS2 movement |
 | **N** | Toggle autobhop |
 | *(unbound)* | Toggle the speedometer |
 
-Hold **space** and steer with **A**/**D** plus the mouse. That is the whole game.
+Hold space, and on each jump hold *only* the strafe key in the direction you are turning while
+turning the mouse that way — `A` turning left, `D` turning right. Do not hold `W`.
 
-## How to actually bhop
+`/bhop` for your stats, `/bhop top` for the leaderboard.
 
-Hold space. On each jump, hold *only* the strafe key in the direction you are turning, and turn the
-mouse smoothly that way — `A` while turning left, `D` while turning right. Do not hold `W`.
+## Speed
 
-The speedometer shows units per second and, mid-air, how much you have gained since takeoff. Green
-is good. If it is red you are turning too fast or too slow for your current speed — the faster you
-go, the slower you have to turn.
+A clean hop keeps everything you had and adds what you strafed for:
 
-## Why it works
+```
+jump |  takeoff  |   landing  |   gain
+-----+-----------+------------+---------
+   1 |   250.0   |    320.9   |   +70.9
+   2 |   320.9   |    378.8   |   +57.9
+   4 |   429.0   |    473.8   |   +44.9
+   8 |   588.2   |    621.7   |   +33.5
+```
 
-Source's air acceleration has an asymmetry that CS players have been exploiting for 25 years, and
-it is reproduced faithfully in [`SourcePhysics`](src/main/java/com/santi/cs2bhop/physics/SourcePhysics.java):
+Each takeoff equals the previous landing — a hop costs you nothing. Botch it and stay on the ground
+for a full tick and you lose **24%**, which is the entire game.
+
+Gains shrink as you speed up because that is what the maths says: a perfect strafe adds exactly 900
+to *v²* per tick, so speed grows as a square root no matter how good you are.
+
+### Why airstrafing works
+
+Source's air acceleration has an asymmetry, reproduced faithfully in
+[`SourcePhysics`](src/main/java/com/santi/cs2bhop/physics/SourcePhysics.java):
 
 ```java
 double clampedWishSpeed = Math.min(wishSpeed, airMaxWishSpeed);   // 30 u/s
@@ -43,97 +59,172 @@ if (addSpeed <= 0.0) return;
 double accelSpeed = Math.min(airAccel * wishSpeed * dt, addSpeed); // unclamped 250 u/s
 ```
 
-`addSpeed` is measured against a wish speed clamped to 30 u/s, but `accelSpeed` uses the full 250.
-The clamp therefore limits how much velocity you may add *along the direction you are already
-moving*, and not at all how much you may add perpendicular to it. Point your wish direction at a
-right angle to your velocity and you get the full 30 u/s every tick, almost none of which is wasted
-opposing your existing motion.
+`addSpeed` is measured against a wish speed clamped to 30 u/s, `accelSpeed` uses the full 250. The
+clamp limits velocity you add *along* your current motion and not at all perpendicular to it. Point
+your wish direction at a right angle to your velocity and you collect the full 30 u/s every tick.
 
-Writing `u = |v|·cos θ` for the component of velocity along the wish direction, the new speed after
-one tick is
+With `u = |v|·cos θ`, one tick gives `|v'|² = |v|² + 900 − u²`, maximal at `u = 0` — exactly
+perpendicular. Remove the clamp and air control becomes unbounded and the game stops being fun.
 
-```
-|v'|² = |v|² + 2u(30 − u) + (30 − u)² = |v|² + 900 − u²
-```
+## Levels
 
-maximal at `u = 0` — exactly perpendicular. So a perfect strafe adds **exactly 900 to v² per tick**,
-regardless of how fast you are already going. Speed grows as a square root: quick at first, then
-grinding. Remove the 30 u/s clamp and `accelSpeed` stops being the binding constraint, air control
-becomes unbounded, and the whole thing collapses into a boring runaway.
+Level 1 to 50. Both ends of your speed envelope scale with it:
 
-Simulating the port with a perfect strafe, 60 Hz, autobhop:
+| Level | Run speed | Ceiling | Points |
+| --- | --- | --- | --- |
+| 1 | 250 u/s | 700 u/s | 0 |
+| 10 | 263 u/s | 939 u/s | 2,691 |
+| 30 | 291 u/s | 1469 u/s | 17,496 |
+| 50 | 320 u/s | 2000 u/s | 40,495 |
 
-```
-jump |  takeoff  |   landing  |   gain
------+-----------+------------+---------
-   1 |   228.3   |    304.4   |   +76.0
-   2 |   278.0   |    343.2   |   +65.2
-   4 |   340.2   |    395.3   |   +55.1
-   8 |   401.4   |    449.0   |   +47.6
-```
+Level 50 is roughly 18,000 hops, about 3.8 hours of clean bhopping.
 
-The drop between each landing and the next takeoff is one tick of ground friction, which costs about
-8.7%. Land flat for a whole Minecraft tick instead and you lose **24%**. That is the entire reason
-bunny hopping is worth doing.
+### What counts as a hop
 
-## Two decisions that are not faithful ports, on purpose
+**Regular jumps do not count.** A jump scores only if *both* hold:
 
-**Substepping.** Minecraft ticks at 20 Hz, CS2 servers at 64. Because air acceleration is quantised
-per tick by the 30 u/s clamp, running the model at 20 Hz would give you roughly a third of the
-strafe gain per second and bhopping would feel dead. So velocity is integrated in 3 substeps per
-tick (60 Hz, `subticks` in the config) while collision still runs once per tick, through Minecraft's
-own `move()`. Jump airtime lands at 0.75 s ≈ 45 substeps, against CS2's ~46 ticks.
+- it is **chained** — you left the ground within 2 ticks of landing, so the first jump out of a
+  standstill never counts and neither does jumping around while you walk;
+- you were at **90% of your level's run speed** or better, so jumping on the spot is worth nothing
+  no matter how fast you spam it.
 
-**Unit scale.** `unitsToBlocks` defaults to **0.025**, which maps a 72-unit CS player onto
-Minecraft's 1.8-block player. That puts run speed at 6.25 blocks/s and jump height at ~1.4 blocks,
-so you still clear a single block like you expect. The physically correct conversion (1 unit =
-0.75 inch = 0.01905) gives a 1.04-block jump and you can no longer step onto a block, which breaks
-Minecraft as a game. Set it to `0.01905` if you want true CS2 scale and are willing to live with
-that.
+Hops are detected **server-side** from movement state, not reported by the client, so points cannot
+be spoofed by sending packets.
+
+Points per hop scale with speed, your boots, and whether you are in the bhop biome.
+
+## Boots
+
+Six pairs. Damage is per **banked hop** — build a chain, then press **V** to release it as a radial
+shockwave. Radius grows with the chain from 3 up to 12 blocks.
+
+| Boots | Damage/hop | Points | Recipe |
+| --- | --- | --- | --- |
+| Wooden | 1 | 1.10x | Leather boots + rabbit's foot |
+| Copper | 2 | 1.25x | Copper boots + rabbit's foot |
+| Iron | 5 | 1.50x | Iron boots + rabbit's foot |
+| Diamond | 6 | 1.75x | Diamond boots + rabbit's foot |
+| Netherite | 8 | 2.00x | Netherite boots + rabbit's foot |
+| **Phoon** | 10 | 3.00x | — |
+
+A 30-hop chain in iron boots is 150 damage in an 10.5-block radius.
+
+The **Phoon Boots** have no recipe and are not in the creative menu. Chain 50 hops in a row and they
+find you. They play the song.
+
+## The bhop biome
+
+**Bhop Flats** — flat, open, a few scattered oaks, and **1.5x points**.
+
+Terrain shape is a property of the dimension's density functions, not of a biome, so no biome can
+force the ground flat. What it can do is claim the parameter space where the generator already makes
+flat ground — erosion band 6 (`0.55..1.0`), vanilla's flattest inland terrain, at a narrow weirdness
+slice so it shows up as occasional wide plains rather than taking over the temperate band. It is
+genuinely flat; it is flat because of *where it lives*, not because anything levelled it.
+
+Fabric's biome API only injects into the Nether and the End, so placement is a mixin on
+`OverworldBiomeBuilder`.
+
+## Bhopping mobs
+
+About **2% of mobs** know how to bhop. They airstrafe optimally — wish direction exactly
+perpendicular to velocity, the thing you are trying to do by hand — so a bhopping zombie closes
+distance alarmingly well. They trail crit particles, and cap at 500 u/s, well under a levelled
+player.
+
+Membership comes from a hash of the mob's UUID rather than being stored, so it is stable across
+saves with no persistence: a mob that bhops always bhopped.
+
+## Motion blur
+
+Speed-scaled, off the same envelope as your level: FOV opens up to ~18% and a soft vignette closes
+in from the edges, both easing in quadratically so normal running is completely clean and it only
+shows up once you are flying. Capped at 34% opacity.
+
+This is FOV plus a vignette, **not** a post-process blur. Real motion blur means running a shader
+chain over the framebuffer, which is heavy and is the part of the renderer most likely to be
+rearranged between versions. Set `motionBlur: false` to disable.
+
+## Two deviations from CS2, on purpose
+
+**Substepping.** Minecraft ticks at 20 Hz, CS2 servers at 64. Air acceleration is quantised per tick
+by the 30 u/s clamp, so running the model at 20 Hz would give a third of the strafe gain. Velocity
+integrates in 3 substeps per tick (60 Hz) while collision still runs once, through Minecraft's own
+`move()`. Jump airtime lands at 0.75 s ≈ 45 substeps against CS2's ~46 ticks.
+
+**Unit scale.** `unitsToBlocks` defaults to **0.025**, mapping a 72-unit CS player onto Minecraft's
+1.8-block player: run speed 6.25 blocks/s, jump height ~1.4 blocks, so you still clear a single
+block. The physically correct 0.01905 (1 unit = 0.75 inch) gives a 1.04-block jump and you can no
+longer step onto a block. Set it if you want true scale.
 
 ## Config
 
 `config/cs2bhop.json`, written on first launch. Field names match the Source cvar where one exists.
 
-Defaults are a **bhop/KZ server**: autobhop on, no speed cap, no stamina, unlimited gain.
+Defaults are a **bhop/KZ server**: autobhop on, clean hops keep all speed, no stamina.
 
-For **stock CS2 matchmaking movement** — timed jumps, and the stamina system that makes the fourth
-hop in a row barely leave the ground:
+For **stock CS2 matchmaking movement**:
 
 ```json
 {
   "autoBunnyHopping": false,
   "bunnyHopSpeedCap": true,
-  "stamina": true
+  "stamina": true,
+  "frictionOnHopTick": true
 }
 ```
 
-Other knobs: `sv_maxspeed`, `sv_accelerate`, `sv_airaccelerate`, `sv_friction`, `sv_stopspeed`,
+`frictionOnHopTick` is the honest-to-Source model where every hop pays one tick of ground friction
+(~9%). It is off by default because it taxes every hop and makes speed climb far slower than an
+actual autobhop server feels.
+
+Also: `sv_maxspeed`, `sv_accelerate`, `sv_airaccelerate`, `sv_friction`, `sv_stopspeed`,
 `sv_air_max_wishspeed`, `sv_gravity`, `sv_jump_impulse`, `duckSpeedMultiplier`, `subticks`,
-`unitsToBlocks`, `sourceGravity`, `hud`, `enabled`.
+`unitsToBlocks`, `sourceGravity`, `hopChainWindow`, `hopSpeedFraction`, `pointsPerHop`,
+`bhopBiomePointMultiplier`, `phoonUnlockStreak`, `shockwaveCooldownTicks`, `mobBhop`,
+`mobBhopChance`, `mobBhopMaxSpeed`, `motionBlur`, `hud`, `enabled`.
 
-CS2 has no sprint, so **the sprint key is ignored** — you always move at `sv_maxspeed` unless
-crouching (`duckSpeedMultiplier`, 0.34).
+CS2 has no sprint, so **the sprint key is ignored** — you always move at your level's run speed
+unless crouching.
 
-## Where it does not apply
+## Where CS2 movement does not apply
 
-Falls back to vanilla movement for swimming, water and lava, ladders, elytra, creative flight,
-riding anything, and spectator. Everything else — collision, step-up, fall damage, block friction
-being irrelevant now — goes through Minecraft's normal `move()`.
+Falls back to vanilla for swimming, water and lava, ladders, elytra, creative flight, riding, and
+spectator.
 
 ## Multiplayer
 
-This is client-side because Minecraft movement is client-authoritative: the server accepts whatever
-position you report as long as it is under ~100 m² per tick, and bhop speeds are two orders of
-magnitude below that. Nothing here weakens or bypasses a server's movement validation, and there is
-deliberately no mixin that touches it.
+Movement is simulated client-side because Minecraft movement is client-authoritative — the server
+accepts any position under ~100 m² per tick and bhop speeds are two orders of magnitude below that.
+Nothing here weakens or bypasses server movement validation, and there is deliberately no mixin that
+touches it. Scoring is server-side and cannot be spoofed.
 
-It will still plainly look like a movement advantage to anyone watching, and anti-cheat on public
-servers will treat it as one. Intended for singleplayer and servers where everyone is in on it.
+## The song
+
+`assets/cs2bhop/sounds/phoon.ogg` is **not in this repo** — it is a copyrighted track and this
+repository is public. It is in local builds only. To rebuild it:
+
+```bash
+ffmpeg -i "The CSGO bhop song! - Nicolas.m4a" -ac 1 -ar 44100 -c:a libvorbis -q:a 3 src/main/resources/assets/cs2bhop/sounds/phoon.ogg
+```
+
+Without it the Phoon Boots work fine and log a missing sound.
+
+## Textures
+
+Generated, not hand-drawn — one silhouette, six palettes, so the set stays consistent and a palette
+change is one line:
+
+```bash
+java tools/TextureGen.java src/main/resources/assets/cs2bhop/textures/item
+```
+
+(GeckoLib does not generate textures — it is an animation library, and its 26.1.2 build is NeoForge
+only.)
 
 ## Building
 
-Needs JDK 25. A project-local Temurin 25 lives in `tools/` (gitignored) if you want it:
+Needs JDK 25. A project-local Temurin 25 lives in `tools/` (gitignored):
 
 ```bash
 JAVA_HOME=tools/jdk-25.0.4+7 ./gradlew build

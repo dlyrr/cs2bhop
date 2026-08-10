@@ -1,0 +1,11 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "equipment",
+  "ingredients": [
+    "minecraft:diamond_boots",
+    "minecraft:rabbit_foot"
+  ],
+  "result": {
+    "id": "cs2bhop:diamond_bhop_boots"
+  }
+}

@@ -96,7 +96,11 @@ public final class Cs2Movement {
         SourcePhysics.wishDirection(input.z, input.x, player.getYRot(), state.wishDir);
         double wishX = state.wishDir[0];
         double wishZ = state.wishDir[1];
-        double wishSpeed = config.wishSpeedFor(ducking);
+
+        // Both ends of the speed envelope scale with your bhop level.
+        double runSpeed = ClientProgress.runSpeed(config);
+        double wishSpeed = ducking ? runSpeed * config.duckSpeedMultiplier : runSpeed;
+        double speedCap = ClientProgress.speedCap(config);
 
         double gravity = config.sourceGravity ? config.sv_gravity : VANILLA_GRAVITY_BPS2 / unitsToBlocks;
         double jumpImpulse = config.sourceGravity ? config.sv_jump_impulse : VANILLA_JUMP_BPS / unitsToBlocks;
@@ -106,12 +110,17 @@ public final class Cs2Movement {
 
         for (int step = 0; step < substeps; step++) {
             if (!airborne) {
-                velocity.friction(config.sv_friction, config.sv_stopspeed, dt);
+                boolean takingOff = step == 0 && wantJump;
 
-                if (step == 0 && wantJump) {
+                // A clean hop leaves before friction can bite. Staying grounded still costs you.
+                if (!takingOff || config.frictionOnHopTick) {
+                    velocity.friction(config.sv_friction, config.sv_stopspeed, dt);
+                }
+
+                if (takingOff) {
                     if (config.bunnyHopSpeedCap) {
                         // sv_enablebunnyhopping 0: CS2 shaves you back to 110.4% of max on takeoff.
-                        velocity.clampHorizontal(config.sv_maxspeed * 1.104);
+                        velocity.clampHorizontal(runSpeed * 1.104);
                     }
 
                     velocity.y = jumpImpulse * state.jumpMultiplier(config);
@@ -130,6 +139,9 @@ public final class Cs2Movement {
 
             velocity.y -= gravity * dt;
         }
+
+        // The level ceiling. Without it, a long enough chain grows without bound.
+        velocity.clampHorizontal(speedCap);
 
         state.tickStamina(config, 0.05);
         state.previousSpeed = velocity.horizontalSpeed();

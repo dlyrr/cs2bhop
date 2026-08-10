@@ -1,10 +1,12 @@
 package com.santi.cs2bhop.client;
 
 import com.santi.cs2bhop.config.BhopConfig;
+import com.santi.cs2bhop.net.BhopPayloads;
 import com.santi.cs2bhop.physics.MoveState;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
@@ -31,6 +33,7 @@ public class Cs2BhopClient implements ClientModInitializer {
     private static KeyMapping toggleKey;
     private static KeyMapping autoBhopKey;
     private static KeyMapping hudKey;
+    private static KeyMapping abilityKey;
 
     public static MoveState state() {
         return STATE;
@@ -46,13 +49,22 @@ public class Cs2BhopClient implements ClientModInitializer {
                 new KeyMapping("key.cs2bhop.autobhop", GLFW.GLFW_KEY_N, KeyMapping.Category.MOVEMENT));
         hudKey = KeyMappingHelper.registerKeyMapping(
                 new KeyMapping("key.cs2bhop.hud", GLFW.GLFW_KEY_UNKNOWN, KeyMapping.Category.MOVEMENT));
+        abilityKey = KeyMappingHelper.registerKeyMapping(
+                new KeyMapping("key.cs2bhop.ability", GLFW.GLFW_KEY_V, KeyMapping.Category.MOVEMENT));
 
+        // Blur first so the speedometer sits on top of the vignette rather than under it.
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath(MOD_ID, "motion_blur"), new MotionBlur());
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath(MOD_ID, "speedometer"), new SpeedometerHud());
+
+        ClientPlayNetworking.registerGlobalReceiver(
+                BhopPayloads.ProgressSync.TYPE,
+                (payload, context) -> context.client().execute(() -> ClientProgress.accept(payload)));
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             if (client.player != lastPlayer) {
                 lastPlayer = client.player;
                 STATE.reset();
+                ClientProgress.reset();
             }
 
             while (toggleKey.consumeClick()) {
@@ -72,13 +84,18 @@ public class Cs2BhopClient implements ClientModInitializer {
                 config.save();
                 announce(client, "Speedometer", config.hud);
             }
+
+            while (abilityKey.consumeClick()) {
+                if (client.player != null) {
+                    ClientPlayNetworking.send(new BhopPayloads.ReleaseShockwave());
+                }
+            }
         });
 
         LOGGER.info(
-                "CS2 movement ready (autobhop={}, stamina={}, {} u/s, {} substeps)",
+                "CS2 movement ready (autobhop={}, stamina={}, {} substeps)",
                 config.autoBunnyHopping,
                 config.stamina,
-                config.sv_maxspeed,
                 config.effectiveSubticks());
     }
 

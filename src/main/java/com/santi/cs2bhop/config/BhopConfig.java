@@ -50,6 +50,22 @@ public final class BhopConfig {
      */
     public boolean stamina = false;
 
+    /**
+     * Whether a hop still pays ground friction on the tick it takes off.
+     *
+     * <p>Source applies friction and then checks the jump button, so a textbook-perfect bhop eats
+     * exactly one tick of drag — about 9% at 60 Hz. That is faithful, but it taxes every single hop
+     * and makes speed climb far slower than a real {@code sv_autobunnyhopping} server feels, where
+     * landing and jumping on the same tick keeps essentially all of it.
+     *
+     * <p>Left false, a clean hop keeps everything and only a botched one (staying on the ground)
+     * costs you. Set true for the strictly faithful model.
+     */
+    public boolean frictionOnHopTick = false;
+
+    /** Speed-scaled FOV widening and edge vignette. */
+    public boolean motionBlur = true;
+
     /** Draw the cl_showpos-style speedometer. */
     public boolean hud = true;
 
@@ -99,6 +115,49 @@ public final class BhopConfig {
      * integration at 60 Hz, close to a 64-tick server. Collision still runs once per tick.
      */
     public int subticks = 3;
+
+    // ------------------------------------------------------- progression
+
+    /** Ground run speed in u/s at level 50. Level 1 uses {@link #sv_maxspeed}. */
+    public double maxLevelRunSpeed = 320.0;
+
+    /** Hard ceiling on bhop speed in u/s at level 1. */
+    public double baseSpeedCap = 700.0;
+
+    /** Hard ceiling on bhop speed in u/s at level 50. */
+    public double maxLevelSpeedCap = 2000.0;
+
+    /**
+     * How soon after landing you must leave the ground again for the jump to count as a hop.
+     * 2 ticks is tight enough that a normal jump never qualifies.
+     */
+    public int hopChainWindow = 2;
+
+    /** Fraction of your level's run speed you must be moving at for a jump to count. */
+    public double hopSpeedFraction = 0.9;
+
+    /** Base points for one counted hop, before speed, boot and biome multipliers. */
+    public double pointsPerHop = 1.0;
+
+    /** Point multiplier while inside the bhop biome. */
+    public double bhopBiomePointMultiplier = 1.5;
+
+    /** Chain length that unlocks the Phoon Boots. */
+    public int phoonUnlockStreak = 50;
+
+    /** Cooldown on the boot shockwave, in ticks. */
+    public int shockwaveCooldownTicks = 40;
+
+    // ------------------------------------------------------------- mobs
+
+    /** Whether some mobs spawn knowing how to bhop. */
+    public boolean mobBhop = true;
+
+    /** Fraction of mobs that are bhoppers. */
+    public double mobBhopChance = 0.02;
+
+    /** Speed in u/s at which a bhopping mob stops gaining. */
+    public double mobBhopMaxSpeed = 500.0;
 
     // ------------------------------------------------------------------- stamina
 
@@ -163,3 +222,4 @@ public final class BhopConfig {
         return 0.05 / effectiveSubticks();
     }
 }
+

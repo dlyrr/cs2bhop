@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "cs2bhop:item/wooden_bhop_boots"
+  }
+}
