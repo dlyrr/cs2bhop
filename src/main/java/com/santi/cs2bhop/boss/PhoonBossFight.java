@@ -186,8 +186,15 @@ public final class PhoonBossFight {
     }
 
     private void tickFight(ServerPlayer player) {
-        if (player == null || !player.isAlive()) {
-            finish(null, false, "You left the arena.");
+        if (player == null) {
+            // Logged out mid-fight: tear the arena down, nothing to penalise.
+            finish(null, false, null);
+            return;
+        }
+
+        if (!player.isAlive()) {
+            // Dying is a loss, with the same stakes as being outscored.
+            finish(player, false, "It put you down.");
             return;
         }
 
@@ -314,19 +321,21 @@ public final class PhoonBossFight {
         boss.setTarget(player);
         boss.setAggressive(true);
 
-        double distance = boss.distanceTo(player);
-
-        // No vanilla mob can walk down a bhopper, so it bhops too, and dashes when it falls behind.
+        // No vanilla mob can walk down a bhopper, so it bhops too and steers by the routine in
+        // config/cs2bhop_boss_moves.json — see BossChoreography.
+        int fightTick = config.bossFightSeconds * 20 - ticksLeft;
         Vec3 delta = boss.getDeltaMovement();
+
         if (boss.onGround()) {
-            delta = new Vec3(delta.x, config.sv_jump_impulse * config.unitsToBlocks / 20.0, delta.z);
+            double lift = config.sv_jump_impulse * config.unitsToBlocks / 20.0;
+            delta = new Vec3(delta.x, BossChoreography.isLeap(fightTick) ? lift * 1.5 : lift, delta.z);
         }
 
-        if (distance > 4.0 && boss.tickCount % config.bossDashInterval == 0) {
-            Vec3 towards = new Vec3(player.getX() - boss.getX(), 0.0, player.getZ() - boss.getZ())
-                    .normalize()
-                    .scale(config.bossDashStrength);
-            delta = delta.add(towards);
+        Vec3 steer = BossChoreography.steer(boss, player, fightTick, config.bossDashStrength);
+        if (boss.tickCount % Math.max(1, config.bossDashInterval) == 0) {
+            delta = delta.add(steer);
+        } else {
+            delta = delta.add(steer.scale(0.25));
         }
 
         double horizontal = Math.sqrt(delta.x * delta.x + delta.z * delta.z);
@@ -419,16 +428,17 @@ public final class PhoonBossFight {
         stopSong(player);
 
         if (player != null) {
-            if (reason != null) {
-                player.sendSystemMessage(Component.literal(reason).withStyle(ChatFormatting.GRAY));
-            } else if (won) {
+            if (won) {
                 player.sendSystemMessage(Component.literal("You outran PHOON. %,.0f to %,.0f."
                                 .formatted(playerPoints, bossPoints))
                         .withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD));
+                awardVictory(player);
             } else {
-                player.sendSystemMessage(Component.literal("PHOON wins. %,.0f to %,.0f."
-                                .formatted(bossPoints, playerPoints))
-                        .withStyle(ChatFormatting.RED));
+                player.sendSystemMessage(Component.literal(reason != null
+                                ? "PHOON wins. " + reason
+                                : "PHOON wins. %,.0f to %,.0f.".formatted(bossPoints, playerPoints))
+                        .withStyle(ChatFormatting.RED, ChatFormatting.BOLD));
+                applyDefeat(player);
             }
 
             sync(player);
@@ -439,6 +449,85 @@ public final class PhoonBossFight {
             phase = Phase.RESTORING;
         } else {
             phase = Phase.DONE;
+        }
+    }
+
+    /**
+     * Win: the Phoon Boots, which exist nowhere else — no recipe, no creative tab, no drop. Plus the
+     * five wagered boots back, so the egg is a wager rather than a sink.
+     */
+    private void awardVictory(ServerPlayer player) {
+        give(player, new net.minecraft.world.item.ItemStack(
+                com.santi.cs2bhop.item.ModItems.of(com.santi.cs2bhop.item.BootTier.PHOON)));
+
+        player.sendSystemMessage(Component.literal("The Phoon Boots are yours.")
+                .withStyle(ChatFormatting.LIGHT_PURPLE, ChatFormatting.BOLD));
+
+        var saveData = com.santi.cs2bhop.progress.BhopSaveData.get(level.getServer());
+        saveData.put(
+                playerId,
+                player.getGameProfile().name(),
+                saveData.progress(playerId).withPhoonUnlocked());
+
+        if (config.bossReturnsBootsOnWin) {
+            for (com.santi.cs2bhop.item.BootTier tier : com.santi.cs2bhop.item.BhopBootsItem.obtainableTiers()) {
+                give(player, new net.minecraft.world.item.ItemStack(com.santi.cs2bhop.item.ModItems.of(tier)));
+            }
+            player.sendSystemMessage(
+                    Component.literal("Your wagered boots are returned.").withStyle(ChatFormatting.GREEN));
+        }
+    }
+
+    /**
+     * Loss: the boots stay gone, career points are docked, and PHOON puts you on the floor.
+     *
+     * <p>Without this the egg is a free slot machine — you could summon it, ignore it for five
+     * minutes and be no worse off.
+     */
+    private void applyDefeat(ServerPlayer player) {
+        var saveData = com.santi.cs2bhop.progress.BhopSaveData.get(level.getServer());
+        var progress = saveData.progress(playerId);
+
+        long penalty = Math.min(config.bossLossCareerPenalty, progress.points());
+        if (penalty > 0) {
+            saveData.put(
+                    playerId,
+                    player.getGameProfile().name(),
+                    new com.santi.cs2bhop.progress.PlayerProgress(
+                            progress.points() - penalty,
+                            progress.totalHops(),
+                            progress.bestSpeed(),
+                            progress.bestStreak(),
+                            progress.phoonUnlocked()));
+
+            player.sendSystemMessage(
+                    Component.literal("−%,d career points. Your boots are gone.".formatted(penalty))
+                            .withStyle(ChatFormatting.RED));
+        } else {
+            player.sendSystemMessage(
+                    Component.literal("Your boots are gone.").withStyle(ChatFormatting.RED));
+        }
+
+        if (config.bossVictoryDamage > 0 && player.isAlive()) {
+            player.hurtServer(level, player.damageSources().magic(), (float) config.bossVictoryDamage);
+            player.setDeltaMovement(player.getDeltaMovement().add(0.0, 1.1, 0.0));
+            player.hurtMarked = true;
+        }
+
+        level.playSound(
+                null,
+                player.getX(),
+                player.getY(),
+                player.getZ(),
+                net.minecraft.sounds.SoundEvents.WITHER_SPAWN,
+                SoundSource.HOSTILE,
+                0.8F,
+                0.7F);
+    }
+
+    private static void give(ServerPlayer player, net.minecraft.world.item.ItemStack stack) {
+        if (!player.getInventory().add(stack)) {
+            player.drop(stack, false);
         }
     }
 

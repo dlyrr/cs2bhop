@@ -154,13 +154,13 @@ and cap.
 | Iron | 5 | 1.50x | 6 → 16 | Iron boots + rabbit's foot |
 | Diamond | 6 | 1.75x | 7 → 18 | Diamond boots + rabbit's foot |
 | Netherite | 8 | 2.00x | 8 → 22 | Netherite boots + rabbit's foot |
-| **Phoon** | 10 | 3.00x | 10 → 28 | — |
+| **Phoon** | 10 | 3.00x | 10 → 28 | Beat PHOON |
 
 A 30-hop chain in iron boots is 150 damage across a 16-block radius. The same chain in Phoon Boots
 is 300 damage across 28 blocks.
 
-The **Phoon Boots** have no recipe and are not in the creative menu. Chain 50 hops in a row and they
-find you. They play the song.
+The **Phoon Boots** have no recipe, are not in the creative menu, and drop from nothing. **Beating
+PHOON is the only way to get them.** They play the song.
 
 ## The bhop biome
 
@@ -279,3 +279,4 @@ Needs JDK 25. A project-local Temurin 25 lives in `tools/` (gitignored):
 ```bash
 JAVA_HOME=tools/jdk-25.0.4+7 ./gradlew build
 ```
+

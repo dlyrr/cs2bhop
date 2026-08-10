@@ -30,6 +30,7 @@ public class Cs2Bhop implements ModInitializer {
 
         ModItems.register();
         ModSounds.register();
+        com.santi.cs2bhop.boss.BossChoreography.load();
 
         PayloadTypeRegistry.clientboundPlay()
                 .register(BhopPayloads.ProgressSync.TYPE, BhopPayloads.ProgressSync.CODEC);

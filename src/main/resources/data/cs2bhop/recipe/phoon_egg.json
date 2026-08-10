@@ -6,8 +6,7 @@
     "cs2bhop:copper_bhop_boots",
     "cs2bhop:iron_bhop_boots",
     "cs2bhop:diamond_bhop_boots",
-    "cs2bhop:netherite_bhop_boots",
-    "cs2bhop:phoon_boots"
+    "cs2bhop:netherite_bhop_boots"
   ],
   "result": {
     "id": "cs2bhop:phoon_egg"

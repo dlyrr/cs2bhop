@@ -213,11 +213,6 @@ public final class BhopTracker {
         int levelBefore = progress.level();
         PlayerProgress updated = progress.withHop(earned, speed, state.streak);
 
-        if (!updated.phoonUnlocked() && state.streak >= config.phoonUnlockStreak) {
-            updated = updated.withPhoonUnlocked();
-            grantPhoonBoots(player);
-        }
-
         saveData.put(player.getUUID(), player.getGameProfile().name(), updated);
 
         // The same hop also scores in the boss race, if one is running.
@@ -251,16 +246,6 @@ public final class BhopTracker {
                         SoundSource.PLAYERS,
                         0.6F,
                         1.4F);
-    }
-
-    private static void grantPhoonBoots(ServerPlayer player) {
-        ItemStack stack = new ItemStack(ModItems.of(BootTier.PHOON));
-        if (!player.getInventory().add(stack)) {
-            player.drop(stack, false);
-        }
-
-        player.sendSystemMessage(Component.literal("The Phoon Boots have found you.")
-                .withStyle(ChatFormatting.LIGHT_PURPLE));
     }
 
     /** Handles the client pressing the boot ability key. */
@@ -382,3 +367,4 @@ public final class BhopTracker {
         Cs2Bhop.LOGGER.debug("synced bhop progress to {}", player.getGameProfile().name());
     }
 }
+

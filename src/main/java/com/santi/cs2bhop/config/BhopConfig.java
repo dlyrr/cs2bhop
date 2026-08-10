@@ -176,9 +176,6 @@ public final class BhopConfig {
     /** Point multiplier while inside the bhop biome. */
     public double bhopBiomePointMultiplier = 1.5;
 
-    /** Chain length that unlocks the Phoon Boots. */
-    public int phoonUnlockStreak = 50;
-
     /** Cooldown on the boot shockwave, in ticks. */
     public int shockwaveCooldownTicks = 40;
 
@@ -214,7 +211,7 @@ public final class BhopConfig {
     public double bossHitPlayerPenalty = 10.0;
 
     /** Points the boss loses when you land a hit. */
-    public double playerHitBossPenalty = 20.0;
+    public double playerHitBossPenalty = 30.0;
 
     /**
      * Points the boss loses per hit while it is tired.
@@ -236,6 +233,20 @@ public final class BhopConfig {
     public double bossAttackDamage = 5.0;
 
     public double bossHealth = 200.0;
+
+    /**
+     * Career points taken off you when PHOON wins.
+     *
+     * <p>The fight needs a downside or it is a free slot machine — you could summon it, ignore it
+     * for five minutes and lose nothing. This is what makes the egg a wager.
+     */
+    public long bossLossCareerPenalty = 750;
+
+    /** Give the six boots back when you win, so the egg is a wager rather than a sink. */
+    public boolean bossReturnsBootsOnWin = true;
+
+    /** PHOON blows you off your feet when it wins. Damage in health points. */
+    public double bossVictoryDamage = 12.0;
 
     /** Radius the arena is flattened to. */
     public int bossArenaRadius = 40;
@@ -336,4 +347,6 @@ public final class BhopConfig {
         return 0.05 / effectiveSubticks();
     }
 }
+
+
 
