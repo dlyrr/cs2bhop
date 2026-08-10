@@ -102,13 +102,34 @@ Level 50 is roughly 18,000 hops, about 3.8 hours of clean bhopping.
 
 **Regular jumps do not count.** A jump scores only if *both* hold:
 
-- it is **chained** — you left the ground within 2 ticks of landing, so the first jump out of a
-  standstill never counts and neither does jumping around while you walk;
-- you were at **90% of your level's run speed** or better, so jumping on the spot is worth nothing
+- it is **chained** — you spent at most 3 ticks flat on the ground before taking off. Standing or
+  running racks up far more than that, so an ordinary jump never qualifies. This is the condition
+  that actually separates hops from jumps.
+- you were at **75% of your level's run speed** or better, so jumping on the spot is worth nothing
   no matter how fast you spam it.
 
-Hops are detected **server-side** from movement state, not reported by the client, so points cannot
-be spoofed by sending packets.
+Hops are detected **server-side** from movement, not reported by the client, so points cannot be
+spoofed by sending packets.
+
+Detection keys off **vertical motion, not `onGround`**. The obvious implementation — watch for the
+tick where `onGround()` flips false — looks right and fails completely: it needs the single grounded
+tick to arrive in its own server tick, and client and server ticks are not locked together. A clean
+autobhop lands and takes off inside one tick, so the server often sees *no* grounded tick at all and
+scores nothing. Reading speed from one tick's position delta has the same flaw: a tick with no
+movement packet reads as zero. Replaying the same motion through both:
+
+| Stream | old (`onGround` edge) | current |
+| --- | --- | --- |
+| grounded tick observed every landing | 5 | 5 |
+| grounded tick never observed | **0** | 5 |
+| movement packet dropped at takeoff | **0** | 5 |
+
+So takeoff is a rise in vertical motion, and speed is a rolling peak over 4 ticks. The rules live in
+[`HopDetector`](src/main/java/com/santi/cs2bhop/progress/HopDetector.java), free of Minecraft types
+so they can be simulated rather than only tested by playing.
+
+`/bhop debug` toggles a live action-bar readout of measured speed against the threshold, vertical
+motion, flat-tick count, chain length, and why the last takeoff was or was not counted.
 
 Points per hop scale with speed, your boots, and whether you are in the bhop biome.
 

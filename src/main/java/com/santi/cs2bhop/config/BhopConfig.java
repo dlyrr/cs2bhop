@@ -144,13 +144,21 @@ public final class BhopConfig {
     public double maxLevelSpeedCap = 2000.0;
 
     /**
-     * How soon after landing you must leave the ground again for the jump to count as a hop.
-     * 2 ticks is tight enough that a normal jump never qualifies.
+     * How many ticks you may spend flat on the ground before a jump stops counting as a chained hop.
+     *
+     * <p>3 ticks is 0.15s. Standing or running along the ground racks up far more than that, so a
+     * normal jump never qualifies — this is the condition that actually separates hops from jumps.
      */
-    public int hopChainWindow = 2;
+    public int hopChainWindow = 3;
 
-    /** Fraction of your level's run speed you must be moving at for a jump to count. */
-    public double hopSpeedFraction = 0.9;
+    /**
+     * Fraction of your level's run speed you must be moving at for a jump to count.
+     *
+     * <p>Secondary to the chain window; it only exists to stop jumping on the spot from scoring.
+     * Kept well below 1.0 because a threshold sitting right on top of run speed is fragile — server
+     * speed is measured from movement packets and dips slightly whenever one arrives late.
+     */
+    public double hopSpeedFraction = 0.75;
 
     /** Base points for one counted hop, before speed, boot and biome multipliers. */
     public double pointsPerHop = 1.0;

@@ -29,7 +29,23 @@ public final class BhopCommand {
                         .then(Commands.argument("count", IntegerArgumentType.integer(1, 50))
                                 .executes(ctx -> leaderboard(
                                         ctx.getSource(), IntegerArgumentType.getInteger(ctx, "count")))))
-                .then(Commands.literal("leaderboard").executes(ctx -> leaderboard(ctx.getSource(), 10))));
+                .then(Commands.literal("leaderboard").executes(ctx -> leaderboard(ctx.getSource(), 10)))
+                .then(Commands.literal("debug").executes(ctx -> debug(ctx.getSource()))));
+    }
+
+    /**
+     * Live readout of what the server thinks is happening: measured speed against the threshold,
+     * vertical motion, flat-tick count, chain length, and why the last takeoff was or was not
+     * counted. Shown on the action bar every tick.
+     */
+    private static int debug(CommandSourceStack source) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+        ServerPlayer player = source.getPlayerOrException();
+        boolean on = BhopTracker.toggleDebug(player);
+        source.sendSuccess(
+                () -> Component.literal("Bhop debug readout " + (on ? "on" : "off"))
+                        .withStyle(ChatFormatting.YELLOW),
+                false);
+        return 1;
     }
 
     private static int stats(CommandSourceStack source, ServerPlayer player) {

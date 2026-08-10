@@ -27,17 +27,28 @@ import net.minecraft.world.phys.AABB;
  * Server-side hop detection and scoring.
  *
  * <p>Hops are detected here rather than reported by the client, so points cannot be spoofed by
- * sending fake packets. Everything needed is already server-authoritative: {@code onGround()} and
- * position are driven by movement packets that the server validates.
+ * sending fake packets. Everything needed is server-authoritative: the player's position, which
+ * arrives in validated movement packets.
+ *
+ * <p><b>Detection keys off vertical motion, not {@code onGround}.</b> The obvious implementation —
+ * watch for the tick where {@code onGround()} flips false — looks right and fails in practice: it
+ * depends on the single grounded tick landing in its own server tick, and client and server ticks
+ * are not locked together. A hop whose landing and takeoff packets get processed in the same server
+ * tick shows no grounded tick at all and scores nothing. Same problem with reading speed from one
+ * tick's position delta: a tick that receives no movement packet reads as zero.
+ *
+ * <p>So instead: a takeoff is a tick where vertical motion jumps above half the jump impulse, and
+ * speed is the peak over a short rolling window. Neither needs a specific packet to arrive on a
+ * specific tick.
  *
  * <p><b>A jump only counts as a hop if both hold:</b>
  *
  * <ul>
- *   <li>it is <i>chained</i> — you left the ground within {@code hopChainWindow} ticks of landing,
- *       so the first jump out of a standstill never counts, and neither does jumping around while
- *       walking;
- *   <li>you were moving at least {@code hopSpeedFraction} of your level's run speed, so jumping on
- *       the spot is worth nothing no matter how fast you spam it.
+ *   <li>it is <i>chained</i> — you spent at most {@code hopChainWindow} ticks flat before taking
+ *       off, so the first jump out of a standstill or a run never counts, because standing on the
+ *       ground means many consecutive ticks of near-zero vertical motion;
+ *   <li>you were moving at {@code hopSpeedFraction} of your level's run speed, so jumping on the
+ *       spot is worth nothing no matter how fast you spam it.
  * </ul>
  */
 public final class BhopTracker {
@@ -47,15 +58,21 @@ public final class BhopTracker {
     private BhopTracker() {}
 
     private static final class State {
-        int groundTicks;
-        boolean onGroundLastTick = true;
         double lastX;
+        double lastY;
         double lastZ;
         boolean seeded;
+
+        final HopDetector detector = new HopDetector();
+
         int streak;
         int shockwaveCooldown;
+
         long lastSyncedPoints = -1;
         int lastSyncedStreak = -1;
+
+        boolean debug;
+        String lastVerdict = "no takeoff seen yet";
     }
 
     public static void clear(UUID id) {
@@ -65,6 +82,13 @@ public final class BhopTracker {
     public static int streakOf(ServerPlayer player) {
         State state = STATES.get(player.getUUID());
         return state == null ? 0 : state.streak;
+    }
+
+    /** Toggles the live diagnostic readout for one player. Returns the new state. */
+    public static boolean toggleDebug(ServerPlayer player) {
+        State state = STATES.computeIfAbsent(player.getUUID(), id -> new State());
+        state.debug = !state.debug;
+        return state.debug;
     }
 
     public static void tick(MinecraftServer server) {
@@ -77,53 +101,97 @@ public final class BhopTracker {
         }
     }
 
+    /** Jump impulse expressed as blocks moved in the first tick. */
+    private static double jumpBlocksPerTick(BhopConfig config) {
+        return config.sourceGravity ? config.sv_jump_impulse * config.unitsToBlocks / 20.0 : 0.42;
+    }
+
     private static void tickPlayer(ServerPlayer player, State state, BhopConfig config, BhopSaveData saveData) {
         if (state.shockwaveCooldown > 0) {
             state.shockwaveCooldown--;
         }
 
         double x = player.getX();
+        double y = player.getY();
         double z = player.getZ();
+
         if (!state.seeded) {
             state.lastX = x;
+            state.lastY = y;
             state.lastZ = z;
             state.seeded = true;
+            return;
         }
 
         double dx = x - state.lastX;
+        double dy = y - state.lastY;
         double dz = z - state.lastZ;
         state.lastX = x;
+        state.lastY = y;
         state.lastZ = z;
 
         // blocks/tick -> Source units/second
         double speed = Math.sqrt(dx * dx + dz * dz) * 20.0 / config.unitsToBlocks;
 
-        boolean onGround = player.onGround();
         PlayerProgress progress = saveData.progress(player.getUUID());
         double runSpeed = BhopLevels.runSpeed(progress.level(), config);
+        double required = runSpeed * config.hopSpeedFraction;
 
-        if (onGround) {
-            state.groundTicks++;
-        } else if (state.onGroundLastTick) {
-            // Just left the ground: this is a takeoff, and the only place a hop can be scored.
-            boolean chained = state.groundTicks <= config.hopChainWindow;
-            boolean fastEnough = speed >= runSpeed * config.hopSpeedFraction;
+        boolean eligible = !player.isSpectator()
+                && !player.getAbilities().flying
+                && !player.isPassenger()
+                && !player.isFallFlying()
+                && !player.onClimbable()
+                && !player.isInWater()
+                && !player.isInLava();
 
-            if (chained && fastEnough) {
+        HopDetector.Verdict verdict = state.detector.offer(
+                dy,
+                speed,
+                player.onGround(),
+                jumpBlocksPerTick(config) * 0.5,
+                required,
+                config.hopChainWindow,
+                eligible);
+
+        double peakSpeed = state.detector.peakSpeed();
+
+        switch (verdict) {
+            case COUNTED -> {
                 state.streak++;
-                award(player, state, progress, speed, config, saveData);
-            } else {
-                state.streak = 0;
+                award(player, state, progress, peakSpeed, config, saveData);
+                state.lastVerdict = "counted (%.0f u/s, chain %d)".formatted(peakSpeed, state.streak);
             }
-            state.groundTicks = 0;
+            case REJECTED_NOT_CHAINED -> {
+                state.streak = 0;
+                state.lastVerdict = "rejected: ordinary jump, sat flat too long";
+            }
+            case REJECTED_TOO_SLOW -> {
+                state.streak = 0;
+                state.lastVerdict = "rejected: too slow, %.0f < %.0f u/s".formatted(peakSpeed, required);
+            }
+            case NONE -> {}
         }
 
         // Standing around ends the chain.
-        if (onGround && state.groundTicks > config.hopChainWindow && state.streak > 0) {
+        if (state.detector.chainBroken(config.hopChainWindow) && state.streak > 0) {
             state.streak = 0;
         }
 
-        state.onGroundLastTick = onGround;
+        if (state.debug) {
+            player.sendSystemMessage(
+                    Component.literal("spd %.0f/%.0f  dy %+.3f  flat %d  chain %d | %s"
+                                    .formatted(
+                                            peakSpeed,
+                                            required,
+                                            dy,
+                                            state.detector.flatTicks(),
+                                            state.streak,
+                                            state.lastVerdict))
+                            .withStyle(ChatFormatting.GRAY),
+                    true);
+        }
+
         maybeSync(player, state, saveData, config);
     }
 
@@ -233,9 +301,25 @@ public final class BhopTracker {
         }
 
         level.sendParticles(
-                ParticleTypes.SWEEP_ATTACK, player.getX(), player.getY() + 0.2, player.getZ(), (int) (radius * 8), radius / 2.0, 0.3, radius / 2.0, 0.0);
+                ParticleTypes.SWEEP_ATTACK,
+                player.getX(),
+                player.getY() + 0.2,
+                player.getZ(),
+                (int) (radius * 8),
+                radius / 2.0,
+                0.3,
+                radius / 2.0,
+                0.0);
         level.sendParticles(
-                ParticleTypes.CLOUD, player.getX(), player.getY() + 0.1, player.getZ(), (int) (radius * 6), radius / 2.0, 0.1, radius / 2.0, 0.02);
+                ParticleTypes.CLOUD,
+                player.getX(),
+                player.getY() + 0.1,
+                player.getZ(),
+                (int) (radius * 6),
+                radius / 2.0,
+                0.1,
+                radius / 2.0,
+                0.02);
 
         level.playSound(
                 null,
