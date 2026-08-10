@@ -28,6 +28,7 @@ public class Cs2Bhop implements ModInitializer {
     public void onInitialize() {
         BhopConfig config = BhopConfig.get();
 
+        com.santi.cs2bhop.entity.ModEntities.register();
         ModItems.register();
         ModSounds.register();
         com.santi.cs2bhop.boss.BossChoreography.load();
@@ -49,6 +50,23 @@ public class Cs2Bhop implements ModInitializer {
         });
 
         ServerLifecycleEvents.SERVER_STOPPING.register(server -> PhoonBossFight.abortActive());
+
+        // PHOON is invulnerable unless it is tired, so the window is the only offensive opening.
+        ServerLivingEntityEvents.ALLOW_DAMAGE.register((entity, source, amount) -> {
+            PhoonBossFight fight = PhoonBossFight.current();
+            if (fight == null || !fight.isBoss(entity.getUUID())) {
+                return true;
+            }
+
+            if (fight.canBeHit()) {
+                return true;
+            }
+
+            if (source.getEntity() instanceof ServerPlayer attacker) {
+                fight.onHitRefused(attacker);
+            }
+            return false;
+        });
 
         // Hits either way move the scoreboard, so the fight is a race you can interfere with.
         ServerLivingEntityEvents.AFTER_DAMAGE.register((entity, source, dealt, taken, blocked) -> {
@@ -83,3 +101,4 @@ public class Cs2Bhop implements ModInitializer {
                 config.effectiveSubticks());
     }
 }
+

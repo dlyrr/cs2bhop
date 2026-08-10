@@ -53,6 +53,10 @@ public class Cs2BhopClient implements ClientModInitializer {
                 new KeyMapping("key.cs2bhop.ability", GLFW.GLFW_KEY_V, KeyMapping.Category.MOVEMENT));
 
         // Blur first so the speedometer sits on top of the vignette rather than under it.
+        net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry.register(
+                com.santi.cs2bhop.entity.ModEntities.PHOON_BOSS,
+                com.santi.cs2bhop.client.render.PhoonBossRenderer::new);
+
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath(MOD_ID, "motion_blur"), new MotionBlur());
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath(MOD_ID, "speedometer"), new SpeedometerHud());
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath(MOD_ID, "boss_scoreboard"), new BossHud());
@@ -114,3 +118,4 @@ public class Cs2BhopClient implements ClientModInitializer {
         }
     }
 }
+

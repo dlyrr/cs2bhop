@@ -196,7 +196,7 @@ public final class BhopConfig {
     public int bossFightSeconds = 300;
 
     /** Points the boss accrues per second at level 1. Tuned so a clean bhop run is a dead heat. */
-    public double bossPointsPerSecond = 3.5;
+    public double bossPointsPerSecond = 7.5;
 
     /**
      * How much the boss's rate scales with your level.
@@ -210,16 +210,13 @@ public final class BhopConfig {
     /** Points you lose when the boss lands a hit. */
     public double bossHitPlayerPenalty = 10.0;
 
-    /** Points the boss loses when you land a hit. */
-    public double playerHitBossPenalty = 30.0;
-
     /**
-     * Points the boss loses per hit while it is tired.
+     * Points the boss loses per hit.
      *
-     * <p>Five times a normal hit, which is what makes the window worth breaking your chain for —
-     * you give up hop points to close the distance, and it has to pay off.
+     * <p>Hits only land during a tired window — PHOON cannot be touched otherwise — so this is the
+     * only way to take points off it, and the whole reason to break a chain and close the distance.
      */
-    public double bossTiredHitPenalty = 100.0;
+    public double bossTiredHitPenalty = 30.0;
 
     /** How long the boss stays tired, in ticks. Four seconds. */
     public int bossTiredDurationTicks = 80;
@@ -347,6 +344,7 @@ public final class BhopConfig {
         return 0.05 / effectiveSubticks();
     }
 }
+
 
 
 

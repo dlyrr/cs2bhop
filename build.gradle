@@ -7,11 +7,8 @@ version = project.mod_version
 group = project.maven_group
 
 repositories {
-	// Add repositories to retrieve artifacts from in here.
-	// You should only use this when depending on other mods because
-	// Loom adds the essential maven repositories to download Minecraft and libraries from automatically.
-	// See https://docs.gradle.org/current/userguide/declaring_repositories.html
-	// for more information about repositories.
+	// GeckoLib publishes no maven artifact for the Fabric 26.x builds, only the Modrinth jar,
+	// so it lives in libs/ instead. See the README for the fetch command.
 }
 
 loom {
@@ -32,6 +29,10 @@ dependencies {
 
 	// Fabric API. This is technically optional, but you probably want it anyway.
 	implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+
+	// GeckoLib drives the Phoon boss model, so its animations can be authored in Blockbench.
+	// Already published in the production mapping namespace, so it needs no remapping.
+	compileOnly files("libs/geckolib-fabric-${project.minecraft_version}-${project.geckolib_version}.jar")
 }
 
 processResources {

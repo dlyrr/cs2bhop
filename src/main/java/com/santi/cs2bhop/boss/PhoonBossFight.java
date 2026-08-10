@@ -255,6 +255,10 @@ public final class PhoonBossFight {
     }
 
     private void tickTired(ServerPlayer player) {
+        if (boss instanceof com.santi.cs2bhop.entity.PhoonBossEntity phoon) {
+            phoon.setTired(tiredTicks > 0);
+        }
+
         if (tiredTicks > 0) {
             tiredTicks--;
 
@@ -396,19 +400,36 @@ public final class PhoonBossFight {
                 true);
     }
 
-    /** You landed a hit. Worth five times as much during a tired window. */
+    /**
+     * You landed a hit. Only reachable during a tired window — see {@link #canBeHit()} — so this is
+     * the one way to take points off it.
+     */
     public void onBossHit(ServerPlayer player) {
-        if (phase != Phase.FIGHTING) {
+        if (phase != Phase.FIGHTING || tiredTicks <= 0) {
             return;
         }
 
-        boolean tired = tiredTicks > 0;
-        double penalty = tired ? config.bossTiredHitPenalty : config.playerHitBossPenalty;
-        bossPoints = Math.max(0.0, bossPoints - penalty);
+        bossPoints = Math.max(0.0, bossPoints - config.bossTiredHitPenalty);
 
         player.sendSystemMessage(
-                Component.literal("PHOON -%.0f points%s".formatted(penalty, tired ? "  (TIRED)" : ""))
-                        .withStyle(tired ? ChatFormatting.GOLD : ChatFormatting.GREEN),
+                Component.literal("PHOON −%.0f".formatted(config.bossTiredHitPenalty))
+                        .withStyle(ChatFormatting.GOLD),
+                true);
+    }
+
+    /** PHOON is untouchable unless it is tired. That window is the entire offensive game. */
+    public boolean canBeHit() {
+        return phase == Phase.FIGHTING && tiredTicks > 0;
+    }
+
+    /** Feedback for swinging at it while it is up, so the rule is legible rather than a mystery. */
+    public void onHitRefused(ServerPlayer player) {
+        if (player.tickCount % 10 != 0) {
+            return;
+        }
+        player.sendSystemMessage(
+                Component.literal("PHOON is not tired — you cannot touch it")
+                        .withStyle(ChatFormatting.DARK_RED),
                 true);
     }
 
@@ -601,7 +622,7 @@ public final class PhoonBossFight {
             return;
         }
 
-        Mob spawned = EntityType.VINDICATOR.spawn(level, centre.above(), EntitySpawnReason.EVENT);
+        Mob spawned = com.santi.cs2bhop.entity.ModEntities.PHOON_BOSS.spawn(level, centre.above(), EntitySpawnReason.EVENT);
         if (spawned == null) {
             return;
         }
@@ -675,4 +696,5 @@ public final class PhoonBossFight {
         return playerName;
     }
 }
+
 

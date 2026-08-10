@@ -41,3 +41,7 @@ replay_*.log
 
 # Project-local toolchain and template scratch
 tools/
+
+# GeckoLib jar - fetched from Modrinth, see README
+libs/
+

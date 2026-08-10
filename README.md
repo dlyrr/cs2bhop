@@ -272,6 +272,34 @@ java tools/TextureGen.java src/main/resources/assets/cs2bhop/textures/item
 (GeckoLib does not generate textures — it is an animation library, and its 26.1.2 build is NeoForge
 only.)
 
+## The boss model
+
+PHOON is a **GeckoLib** animatable, so the model and animations are authored in Blockbench and
+picked up on resource reload — no Java, no rebuild.
+
+| File | What |
+| --- | --- |
+| `assets/cs2bhop/geo/phoon_boss.geo.json` | the rig — bones `root`, `body`, `head`, `arm_left/right`, `leg_left/right` |
+| `assets/cs2bhop/animations/phoon_boss.animation.json` | `idle`, `run`, `tired`, `attack` |
+| `assets/cs2bhop/textures/entity/phoon_boss.png` | 64×64 on the vanilla humanoid UV map |
+
+Two animation controllers, deliberately separate: `locomotion` holds idle/run/tired, `attack` fires
+one-shot swings. Sharing one controller means a swing cancels the run cycle, which is the usual
+cause of a boss that looks like it is stuttering.
+
+The tired state is synched to the client so `tired` can play during the window — the client
+otherwise has no idea the fight has opened one. Keep those four animation names, or update the
+`RawAnimation` constants in `PhoonBossEntity`.
+
+GeckoLib publishes no maven artifact for its Fabric 26.x builds, only the Modrinth jar, so it is not
+resolved by Gradle. Fetch it into `libs/` (gitignored):
+
+```bash
+curl -L -o libs/geckolib-fabric-26.1.2-5.5.2.jar https://cdn.modrinth.com/data/8BmcQJ2H/versions/XZTmZlwb/geckolib-fabric-26.1.2-5.5.2.jar
+```
+
+Players need GeckoLib installed alongside this mod; `fabric.mod.json` depends on it.
+
 ## Building
 
 Needs JDK 25. A project-local Temurin 25 lives in `tools/` (gitignored):
@@ -279,4 +307,5 @@ Needs JDK 25. A project-local Temurin 25 lives in `tools/` (gitignored):
 ```bash
 JAVA_HOME=tools/jdk-25.0.4+7 ./gradlew build
 ```
+
 
