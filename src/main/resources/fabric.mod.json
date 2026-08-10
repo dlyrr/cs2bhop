@@ -1,0 +1,31 @@
+{
+	"schemaVersion": 1,
+	"id": "cs2bhop",
+	"version": "${version}",
+	"name": "CS2 Bhop",
+	"description": "Replaces Minecraft's player movement with Counter-Strike 2's. Source-engine air acceleration including the 30 u/s air wish speed clamp that makes airstrafing work, autobhop, CS2 stamina, and a cl_showpos speedometer. Client-side only.",
+	"authors": [
+		"santi"
+	],
+	"contact": {},
+	"license": "CC0-1.0",
+	"icon": "assets/cs2bhop/icon.png",
+	"environment": "client",
+	"entrypoints": {
+		"client": [
+			"com.santi.cs2bhop.client.Cs2BhopClient"
+		]
+	},
+	"mixins": [
+		{
+			"config": "cs2bhop.client.mixins.json",
+			"environment": "client"
+		}
+	],
+	"depends": {
+		"fabricloader": ">=0.19.3",
+		"minecraft": "~26.1.2",
+		"java": ">=25",
+		"fabric-api": "*"
+	}
+}

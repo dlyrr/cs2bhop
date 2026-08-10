@@ -1,0 +1,12 @@
+{
+	"required": true,
+	"package": "com.santi.cs2bhop.client.mixin",
+	"compatibilityLevel": "JAVA_21",
+	"client": [
+		"PlayerTravelMixin",
+		"LivingEntityJumpMixin"
+	],
+	"injectors": {
+		"defaultRequire": 1
+	}
+}
